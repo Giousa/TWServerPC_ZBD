@@ -16,7 +16,7 @@ import okhttp3.Response;
 
 public class MyOkHttpUtils {
 	
-//	private static String url = "http://172.28.6.36:8080/api-webapp/api/ACGReport/addACGReport";
+	private static String url2 = "http://172.28.6.36:8080/api-webapp/api/ACGReport/addACGReport";
 	private static String url = "http://test.ricamed.com/api/activePassive/addReport.json";
 //	private static String url = "http://172.28.6.83:9090/api/activePassive/addReport.json";
 
@@ -29,7 +29,7 @@ public class MyOkHttpUtils {
     	
     	OkHttpUtils
 			.post()
-			.url(url)
+			.url(url2)
 			.addParams("s_id", s_id)
 			.addParams("flag", flag+"")
 			.addParams("curSpeed", curSpeed+"")
