@@ -12,36 +12,98 @@ import java.util.ArrayList;
 
 public class ReportModel implements Serializable{
 
-    private long startTime;
+    private String id;
+
+    private int year;
+    private int month;
+
+    private String device_id;
+    private String device_name;
+    private String doctor_id;
+    private String user_id;
+
     private int totalTime;
-    private double totalMileage;
     private int activeTime;
     private int passiveTime;
-    private double activeMileage;
-    private double passiveMileage;
+    private float activeMileage;
+    private float passiveMileage;
     private float timeAngle;
     private float mileageAngle;
-    private byte spasmTimes;
-    private byte spasmLevel;
-    private double totalCal;
-    private byte minSpeed;
-    private byte maxSpeed;
-    private byte avgSpeed;
-    private byte minResistance;
-    private byte maxResistance;
-    private byte avgResistance;
+    private int spasmTimes;
+    private int spasmLevel;
+    private int minSpeed;
+    private int maxSpeed;
+    private int avgSpeed;
+    private int minResistance;
+    private int maxResistance;
+    private int avgResistance;
+    private int avgHeartRate;
+    private int maxHeartRate;
+    private int isPrescription;//1:处方  0：不是
+    private String totalCal;
     private String suggestion;
-    private ArrayList<Integer> resistanceLeft;
-    private ArrayList<Integer> resistanceRight;
-    private ArrayList<Integer> powerLeft;
-    private ArrayList<Integer> powerRight;
+    private String speedRate;
+    private String heartRate;
 
-    public long getStartTime() {
-        return startTime;
+    private String beginTime;
+    private String endTime;
+    private String createTime;
+    private String updateTime;
+
+    public String getId() {
+        return id;
     }
 
-    public void setStartTime(long startTime) {
-        this.startTime = startTime;
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public int getYear() {
+        return year;
+    }
+
+    public void setYear(int year) {
+        this.year = year;
+    }
+
+    public int getMonth() {
+        return month;
+    }
+
+    public void setMonth(int month) {
+        this.month = month;
+    }
+
+    public String getDevice_id() {
+        return device_id;
+    }
+
+    public void setDevice_id(String device_id) {
+        this.device_id = device_id;
+    }
+
+    public String getDevice_name() {
+        return device_name;
+    }
+
+    public void setDevice_name(String device_name) {
+        this.device_name = device_name;
+    }
+
+    public String getDoctor_id() {
+        return doctor_id;
+    }
+
+    public void setDoctor_id(String doctor_id) {
+        this.doctor_id = doctor_id;
+    }
+
+    public String getUser_id() {
+        return user_id;
+    }
+
+    public void setUser_id(String user_id) {
+        this.user_id = user_id;
     }
 
     public int getTotalTime() {
@@ -50,14 +112,6 @@ public class ReportModel implements Serializable{
 
     public void setTotalTime(int totalTime) {
         this.totalTime = totalTime;
-    }
-
-    public double getTotalMileage() {
-        return totalMileage;
-    }
-
-    public void setTotalMileage(double totalMileage) {
-        this.totalMileage = totalMileage;
     }
 
     public int getActiveTime() {
@@ -76,19 +130,19 @@ public class ReportModel implements Serializable{
         this.passiveTime = passiveTime;
     }
 
-    public double getActiveMileage() {
+    public float getActiveMileage() {
         return activeMileage;
     }
 
-    public void setActiveMileage(double activeMileage) {
+    public void setActiveMileage(float activeMileage) {
         this.activeMileage = activeMileage;
     }
 
-    public double getPassiveMileage() {
+    public float getPassiveMileage() {
         return passiveMileage;
     }
 
-    public void setPassiveMileage(double passiveMileage) {
+    public void setPassiveMileage(float passiveMileage) {
         this.passiveMileage = passiveMileage;
     }
 
@@ -108,76 +162,100 @@ public class ReportModel implements Serializable{
         this.mileageAngle = mileageAngle;
     }
 
-    public byte getSpasmTimes() {
+    public int getSpasmTimes() {
         return spasmTimes;
     }
 
-    public void setSpasmTimes(byte spasmTimes) {
+    public void setSpasmTimes(int spasmTimes) {
         this.spasmTimes = spasmTimes;
     }
 
-    public byte getSpasmLevel() {
+    public int getSpasmLevel() {
         return spasmLevel;
     }
 
-    public void setSpasmLevel(byte spasmLevel) {
+    public void setSpasmLevel(int spasmLevel) {
         this.spasmLevel = spasmLevel;
     }
 
-    public double getTotalCal() {
-        return totalCal;
-    }
-
-    public void setTotalCal(double totalCal) {
-        this.totalCal = totalCal;
-    }
-
-    public byte getMinSpeed() {
+    public int getMinSpeed() {
         return minSpeed;
     }
 
-    public void setMinSpeed(byte minSpeed) {
+    public void setMinSpeed(int minSpeed) {
         this.minSpeed = minSpeed;
     }
 
-    public byte getMaxSpeed() {
+    public int getMaxSpeed() {
         return maxSpeed;
     }
 
-    public void setMaxSpeed(byte maxSpeed) {
+    public void setMaxSpeed(int maxSpeed) {
         this.maxSpeed = maxSpeed;
     }
 
-    public byte getAvgSpeed() {
+    public int getAvgSpeed() {
         return avgSpeed;
     }
 
-    public void setAvgSpeed(byte avgSpeed) {
+    public void setAvgSpeed(int avgSpeed) {
         this.avgSpeed = avgSpeed;
     }
 
-    public byte getMinResistance() {
+    public int getMinResistance() {
         return minResistance;
     }
 
-    public void setMinResistance(byte minResistance) {
+    public void setMinResistance(int minResistance) {
         this.minResistance = minResistance;
     }
 
-    public byte getMaxResistance() {
+    public int getMaxResistance() {
         return maxResistance;
     }
 
-    public void setMaxResistance(byte maxResistance) {
+    public void setMaxResistance(int maxResistance) {
         this.maxResistance = maxResistance;
     }
 
-    public byte getAvgResistance() {
+    public int getAvgResistance() {
         return avgResistance;
     }
 
-    public void setAvgResistance(byte avgResistance) {
+    public void setAvgResistance(int avgResistance) {
         this.avgResistance = avgResistance;
+    }
+
+    public int getAvgHeartRate() {
+        return avgHeartRate;
+    }
+
+    public void setAvgHeartRate(int avgHeartRate) {
+        this.avgHeartRate = avgHeartRate;
+    }
+
+    public int getMaxHeartRate() {
+        return maxHeartRate;
+    }
+
+    public void setMaxHeartRate(int maxHeartRate) {
+        this.maxHeartRate = maxHeartRate;
+    }
+
+    public int getIsPrescription() {
+        return isPrescription;
+    }
+
+    public void setIsPrescription(int isPrescription) {
+        this.isPrescription = isPrescription;
+    }
+
+    public String getTotalCal() {
+        return totalCal;
+    }
+
+    public void setTotalCal(String totalCal) {
+        this.totalCal = totalCal;
     }
 
     public String getSuggestion() {
@@ -188,35 +266,51 @@ public class ReportModel implements Serializable{
         this.suggestion = suggestion;
     }
 
-    public ArrayList<Integer> getResistanceLeft() {
-        return resistanceLeft;
+    public String getSpeedRate() {
+        return speedRate;
     }
 
-    public void setResistanceLeft(ArrayList<Integer> resistanceLeft) {
-        this.resistanceLeft = resistanceLeft;
+    public void setSpeedRate(String speedRate) {
+        this.speedRate = speedRate;
     }
 
-    public ArrayList<Integer> getResistanceRight() {
-        return resistanceRight;
+    public String getHeartRate() {
+        return heartRate;
     }
 
-    public void setResistanceRight(ArrayList<Integer> resistanceRight) {
-        this.resistanceRight = resistanceRight;
+    public void setHeartRate(String heartRate) {
+        this.heartRate = heartRate;
     }
 
-    public ArrayList<Integer> getPowerLeft() {
-        return powerLeft;
+    public String getBeginTime() {
+        return beginTime;
     }
 
-    public void setPowerLeft(ArrayList<Integer> powerLeft) {
-        this.powerLeft = powerLeft;
+    public void setBeginTime(String beginTime) {
+        this.beginTime = beginTime;
     }
 
-    public ArrayList<Integer> getPowerRight() {
-        return powerRight;
+    public String getEndTime() {
+        return endTime;
     }
 
-    public void setPowerRight(ArrayList<Integer> powerRight) {
-        this.powerRight = powerRight;
+    public void setEndTime(String endTime) {
+        this.endTime = endTime;
+    }
+
+    public String getCreateTime() {
+        return createTime;
+    }
+
+    public void setCreateTime(String createTime) {
+        this.createTime = createTime;
+    }
+
+    public String getUpdateTime() {
+        return updateTime;
+    }
+
+    public void setUpdateTime(String updateTime) {
+        this.updateTime = updateTime;
     }
 }
