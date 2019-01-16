@@ -1,13 +1,26 @@
 package com.zmm.twserverpc_zbd.server;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.zmm.twserverpc_zbd.client.model.ActiveModel;
+import com.zmm.twserverpc_zbd.client.model.JigouModel;
 import com.zmm.twserverpc_zbd.client.model.PassiveModel;
+import com.zmm.twserverpc_zbd.client.model.RelationModel;
 import com.zmm.twserverpc_zbd.client.model.ReportModel;
 import com.zmm.twserverpc_zbd.utils.DateUtil;
 import com.zmm.twserverpc_zbd.utils.MyOkHttpUtils;
 import com.zmm.twserverpc_zbd.utils.ThreadUtils;
+import com.zmm.twserverpc_zbd.websocket.TWSocketHandler;
+import com.zzwloves.netty.websocket.CloseStatus;
+import com.zzwloves.netty.websocket.TextMessage;
+import com.zzwloves.netty.websocket.WebSocketMessage;
+import com.zzwloves.netty.websocket.WebSocketSession;
+import com.zzwloves.netty.websocket.client.WebSocketClient;
+import com.zzwloves.netty.websocket.handler.WebSocketHandler;
 
+import org.apache.commons.io.FileUtils;
+
+import java.io.File;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -55,6 +68,8 @@ public class Server {
     private static long mEndTime;
     //数据汇总
     private static Map<String,List<String>> mAllMaps = new HashMap<>();
+    private static WebSocketClient mSocketClient;
+    private static MySocketHandler mMySocketHandler;
 
 
     public static void main(String[] args) {
@@ -89,7 +104,13 @@ public class Server {
                     });
 
             Channel ch = bootstrap.bind(8844).sync().channel();
+
+            //发送数据
             sendData();
+
+            //websocket长连接
+            mMySocketHandler = new MySocketHandler();
+            websocketOnline();
 
             System.out.println("服务器开启:");
             ch.closeFuture().sync();
@@ -101,6 +122,7 @@ public class Server {
         }
 
     }
+
 
     private static void sendData() {
 
@@ -591,4 +613,78 @@ public class Server {
         isOver = true;
 
     }
+
+
+    /**
+     * 长连接
+     */
+    private static void websocketOnline() throws Exception{
+
+
+        //   /Users/zhangmengmeng/Downloads/WorkSpaceTest/TWServerPC_ZBD
+        System.out.println("当前路径：："+System.getProperty("user.dir"));
+
+        //   /Users/zhangmengmeng/Downloads/WorkSpaceTest/TWServerPC_ZBD
+        String canonicalPath = new File(".").getCanonicalPath();
+        System.out.println("当前路径2： ："+canonicalPath);
+
+        //   /Users/zhangmengmeng/Downloads/WorkSpaceTest
+        String canonicalPath3 = new File("..").getCanonicalPath();
+        System.out.println("当前路径3： ："+canonicalPath3);
+
+
+//        File file = new File("/Users/zhangmengmeng/Downloads/WorkSpaceTest/jigou.json");
+        File file = new File(canonicalPath3+"/jigou.json");
+        String content= FileUtils.readFileToString(file,"UTF-8");
+        JigouModel jigouModel = JSONObject.parseObject(content, JigouModel.class);
+        System.out.println("机构id = "+jigouModel.getId());
+        System.out.println("机构name = "+jigouModel.getName());
+
+
+
+        mSocketClient = new WebSocketClient("ws://172.28.6.73:8080/websocket?type=device&deviceType=activePassiveServer&id="+jigouModel.getId()
+                ,null,mMySocketHandler);
+
+        mSocketClient.start();
+
+    }
+
+    public static class MySocketHandler implements WebSocketHandler {
+
+
+        @Override
+        public void afterConnectionEstablished(WebSocketSession webSocketSession) throws Exception {
+            System.out.println("websocket ：： 连接成功");
+        }
+
+        @Override
+        public void handleMessage(WebSocketSession webSocketSession, WebSocketMessage<?> webSocketMessage) throws Exception {
+            System.out.println("websocket ：： 消息处理");
+
+            TextMessage textMessage = (TextMessage) webSocketMessage;
+            String payload = textMessage.getPayload();
+
+            RelationModel relationModel = JSONObject.parseObject(payload, RelationModel.class);
+            System.out.println("relationModel = "+relationModel);
+
+        }
+
+        @Override
+        public void handleTransportError(WebSocketSession webSocketSession, Throwable throwable) throws Exception {
+            System.out.println("websocket ：： 连接异常");
+            webSocketSession.close();
+        }
+
+        @Override
+        public void afterConnectionClosed(WebSocketSession webSocketSession, CloseStatus closeStatus) throws Exception {
+            System.out.println("websocket ：： 连接失败");
+
+//            websocketOnline();
+
+            mSocketClient.start();
+
+        }
+    }
+
+
 }
