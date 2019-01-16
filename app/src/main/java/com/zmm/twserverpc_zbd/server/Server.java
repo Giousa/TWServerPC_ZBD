@@ -160,24 +160,7 @@ public class Server {
     }
 
 
-    private static byte[] receiveUDPData() {
-        DatagramSocket ds;
-        byte[] data = new byte[36];
-        try {
-            ds = new DatagramSocket(12347);
-            // 创建数据包
-            byte[] bys = new byte[36];
-            DatagramPacket dp = new DatagramPacket(bys, bys.length);
-            ds.receive(dp);
-            data = dp.getData();
-            ds.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
-        return data;
-
-    }
 
     private static void sendData() {
 
@@ -200,6 +183,19 @@ public class Server {
 
 
     private static void parseJson(String data) {
+
+        //mRunningDevices  对推送数据进行解析判断，只有满足id时才通过
+
+//        if(mDataBeanList != null && mDataBeanList.size() > 0){
+//            for (int i = 0; i < mDataBeanList.size(); i++) {
+//                String id = mDataBeanList.get(i).getDeviceId();
+//                if(data.contains("id")){
+//                    //执行
+//                }
+//            }
+//        }
+
+
 
         if (data.contains("maxSpeed") || data.contains("maxResistance")) {
             mEndTime = System.currentTimeMillis();
@@ -471,6 +467,9 @@ public class Server {
      */
     private static void reportBuild() {
 
+        //游戏结束，将推送数据置空
+        mDataBeanList = null;
+
         if(mAllMaps != null && mAllMaps.size() > 0){
             for (Map.Entry<String, List<String>> entry : mAllMaps.entrySet()) {
                 System.out.println("Key = " + entry.getKey() + ", Value = " + entry.getValue());
@@ -691,7 +690,10 @@ public class Server {
             RelationModel relationModel = JSONObject.parseObject(payload, RelationModel.class);
             System.out.println("relationModel = "+relationModel);
 
+            //每次推送，之前存储数据置空
+            mDataBeanList = null;
             mDataBeanList = relationModel.getData();
+
 
         }
 
@@ -730,7 +732,17 @@ public class Server {
             List<String> devicesList = new ArrayList<>();
 
             for(Map.Entry<String,ChannelHandlerContext> entry : mDeviceMaps.entrySet()){
-                devicesList.add(entry.getKey());
+
+                //这个情况，是已经推送的情况下。推送前，必须是在线的，说明已经推送过了。
+                if(mDataBeanList != null && mDataBeanList.size() > 0){
+                    boolean contains = mDataBeanList.contains(entry.getKey());
+                    if(!contains){
+                        devicesList.add(entry.getKey());
+                    }
+                }else {
+                    devicesList.add(entry.getKey());
+                }
+
             }
 
             messageModel.setData(devicesList);
@@ -819,12 +831,11 @@ public class Server {
 
                 while (true){
 
-                    System.out.println("----------------------------------");
                     try {
                         Thread.sleep(10000);
                         mSocketClient.start();
                         //TODO 待改动。
-                        byte[] bytes = receiveUDPData();
+                        receiveWaitData();
 
                     } catch (Exception e) {
                         System.out.println("长连接异常");
@@ -835,6 +846,25 @@ public class Server {
 
             }
         });
+    }
+
+    private static byte[] receiveWaitData() {
+        DatagramSocket ds;
+        byte[] data = new byte[2];
+        try {
+            ds = new DatagramSocket(11111);
+            // 创建数据包
+            byte[] bys = new byte[2];
+            DatagramPacket dp = new DatagramPacket(bys, bys.length);
+            ds.receive(dp);
+            data = dp.getData();
+            ds.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return data;
+
     }
 
 }
