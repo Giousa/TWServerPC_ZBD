@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.zmm.twserverpc_zbd.client.model.ActiveModel;
 import com.zmm.twserverpc_zbd.client.model.JigouModel;
+import com.zmm.twserverpc_zbd.client.model.MessageModel;
 import com.zmm.twserverpc_zbd.client.model.PassiveModel;
 import com.zmm.twserverpc_zbd.client.model.RelationModel;
 import com.zmm.twserverpc_zbd.client.model.ReportModel;
@@ -35,6 +36,7 @@ import java.util.UUID;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -42,6 +44,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
+import io.netty.handler.timeout.IdleStateHandler;
 
 /**
  * Description:
@@ -70,11 +73,25 @@ public class Server {
     private static Map<String,List<String>> mAllMaps = new HashMap<>();
     private static WebSocketClient mSocketClient;
     private static MySocketHandler mMySocketHandler;
+    private static JigouModel mJigouModel;
+
+    //websocket
+    private static WebSocketSession mWebSocketSession;
+
+    //存储连接数组
+    private static Map<String,ChannelHandlerContext> mDeviceMaps = new HashMap<>();
 
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception{
 
         mStartTime = System.currentTimeMillis();
+
+        String canonicalPath3 = new File("..").getCanonicalPath();
+        File file = new File(canonicalPath3+"/jigou.json");
+        String content= FileUtils.readFileToString(file,"UTF-8");
+        mJigouModel = JSONObject.parseObject(content, JigouModel.class);
+
+        String url = "ws://172.28.6.73:8080/websocket?type=device&deviceType=activePassiveServer&id="+mJigouModel.getId();
 
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup(4);
@@ -89,7 +106,6 @@ public class Server {
                         public void initChannel(SocketChannel ch) throws Exception {
                             ch.pipeline().addLast(new HttpResponseEncoder());
                             ch.pipeline().addLast(new HttpRequestDecoder());
-
                             ServerHandler serverHandler = new ServerHandler();
                             serverHandler.setServerReadListener(new ServerHandler.ServerReadListener() {
                                 @Override
@@ -98,6 +114,37 @@ public class Server {
                                     isOver = false;
                                     mDataList.add(msg);
                                 }
+
+                                @Override
+                                public void onDeviceUnconnect(String deviceId) {
+                                    if(mWebSocketSession != null){
+
+                                        MessageModel messageModel = new MessageModel();
+                                        messageModel.setId(UUID.randomUUID().toString());
+                                        messageModel.setCode("4003");
+                                        messageModel.setCreateTime(System.currentTimeMillis());
+
+                                        List<String> devicesList = new ArrayList<>();
+                                        devicesList.add(deviceId);
+                                        messageModel.setData(devicesList);
+
+                                        String textMsg = JSON.toJSONString(messageModel);
+
+                                        System.out.println("断开设备数据：textMsg = "+textMsg);
+
+                                        TextMessage textMessage = new TextMessage(textMsg);
+                                        try {
+                                            mWebSocketSession.sendMessage(textMessage);
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
+                                    }
+                                }
+
+                                @Override
+                                public void onDeviceconnect(Map<String, ChannelHandlerContext> map) {
+                                    mDeviceMaps = map;
+                                }
                             });
                             ch.pipeline().addLast(serverHandler);
                         }
@@ -105,12 +152,15 @@ public class Server {
 
             Channel ch = bootstrap.bind(8844).sync().channel();
 
-            //发送数据
+            //计时发送数据
             sendData();
 
             //websocket长连接
             mMySocketHandler = new MySocketHandler();
-            websocketOnline();
+
+            mSocketClient = new WebSocketClient(url,null,mMySocketHandler);
+
+            reconnectWebsocket();
 
             System.out.println("服务器开启:");
             ch.closeFuture().sync();
@@ -123,6 +173,25 @@ public class Server {
 
     }
 
+
+    private static byte[] receiveUDPData() {
+        DatagramSocket ds;
+        byte[] data = new byte[36];
+        try {
+            ds = new DatagramSocket(12347);
+            // 创建数据包
+            byte[] bys = new byte[36];
+            DatagramPacket dp = new DatagramPacket(bys, bys.length);
+            ds.receive(dp);
+            data = dp.getData();
+            ds.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return data;
+
+    }
 
     private static void sendData() {
 
@@ -614,47 +683,41 @@ public class Server {
 
     }
 
-
-    /**
-     * 长连接
-     */
-    private static void websocketOnline() throws Exception{
-
-
-        //   /Users/zhangmengmeng/Downloads/WorkSpaceTest/TWServerPC_ZBD
-        System.out.println("当前路径：："+System.getProperty("user.dir"));
-
-        //   /Users/zhangmengmeng/Downloads/WorkSpaceTest/TWServerPC_ZBD
-        String canonicalPath = new File(".").getCanonicalPath();
-        System.out.println("当前路径2： ："+canonicalPath);
-
-        //   /Users/zhangmengmeng/Downloads/WorkSpaceTest
-        String canonicalPath3 = new File("..").getCanonicalPath();
-        System.out.println("当前路径3： ："+canonicalPath3);
-
-
-//        File file = new File("/Users/zhangmengmeng/Downloads/WorkSpaceTest/jigou.json");
-        File file = new File(canonicalPath3+"/jigou.json");
-        String content= FileUtils.readFileToString(file,"UTF-8");
-        JigouModel jigouModel = JSONObject.parseObject(content, JigouModel.class);
-        System.out.println("机构id = "+jigouModel.getId());
-        System.out.println("机构name = "+jigouModel.getName());
-
-
-
-        mSocketClient = new WebSocketClient("ws://172.28.6.73:8080/websocket?type=device&deviceType=activePassiveServer&id="+jigouModel.getId()
-                ,null,mMySocketHandler);
-
-        mSocketClient.start();
-
-    }
-
     public static class MySocketHandler implements WebSocketHandler {
 
 
         @Override
         public void afterConnectionEstablished(WebSocketSession webSocketSession) throws Exception {
             System.out.println("websocket ：： 连接成功");
+            mWebSocketSession = webSocketSession;
+
+            if(mDeviceMaps != null && mDeviceMaps.size() > 0){
+
+                MessageModel messageModel = new MessageModel();
+                messageModel.setId(UUID.randomUUID().toString());
+                messageModel.setCode("2001");
+                messageModel.setCreateTime(System.currentTimeMillis());
+
+                List<String> devicesList = new ArrayList<>();
+
+                for(Map.Entry<String,ChannelHandlerContext> entry : mDeviceMaps.entrySet()){
+                    devicesList.add(entry.getKey());
+                }
+
+                messageModel.setData(devicesList);
+
+                String textMsg = JSON.toJSONString(messageModel);
+
+                System.out.println("上线设备数据：textMsg = "+textMsg);
+
+                TextMessage textMessage = new TextMessage(textMsg);
+                try {
+                    mWebSocketSession.sendMessage(textMessage);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
         }
 
         @Override
@@ -672,19 +735,40 @@ public class Server {
         @Override
         public void handleTransportError(WebSocketSession webSocketSession, Throwable throwable) throws Exception {
             System.out.println("websocket ：： 连接异常");
-            webSocketSession.close();
         }
 
         @Override
         public void afterConnectionClosed(WebSocketSession webSocketSession, CloseStatus closeStatus) throws Exception {
             System.out.println("websocket ：： 连接失败");
-
-//            websocketOnline();
-
-            mSocketClient.start();
+            mWebSocketSession = null;
+            reconnectWebsocket();
 
         }
     }
 
+    private static void reconnectWebsocket(){
+        ThreadUtils.runOnBackgroundThread(new Runnable() {
+            @Override
+            public void run() {
+
+
+                while (true){
+
+                    System.out.println("----------------------------------");
+                    try {
+                        Thread.sleep(5000);
+                        mSocketClient.start();
+                        byte[] bytes = receiveUDPData();
+
+                    } catch (Exception e) {
+                        System.out.println("长连接异常");
+                        e.printStackTrace();
+
+                    }
+                }
+
+            }
+        });
+    }
 
 }

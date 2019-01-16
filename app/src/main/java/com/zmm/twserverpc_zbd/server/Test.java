@@ -67,6 +67,28 @@ public class Test {
 //		} catch (Exception e) {
 //			e.printStackTrace();
 //		}
+
+
+		//        //   /Users/zhangmengmeng/Downloads/WorkSpaceTest/TWServerPC_ZBD
+//        System.out.println("当前路径：："+System.getProperty("user.dir"));
+//
+//        //   /Users/zhangmengmeng/Downloads/WorkSpaceTest/TWServerPC_ZBD
+//        String canonicalPath = new File(".").getCanonicalPath();
+//        System.out.println("当前路径2： ："+canonicalPath);
+//
+//        //   /Users/zhangmengmeng/Downloads/WorkSpaceTest
+//        String canonicalPath3 = new File("..").getCanonicalPath();
+//        System.out.println("当前路径3： ："+canonicalPath3);
+//
+//
+////        File file = new File("/Users/zhangmengmeng/Downloads/WorkSpaceTest/jigou.json");
+//        File file = new File(canonicalPath3+"/jigou.json");
+//        String content= FileUtils.readFileToString(file,"UTF-8");
+//        JigouModel jigouModel = JSONObject.parseObject(content, JigouModel.class);
+//        System.out.println("机构id = "+jigouModel.getId());
+//        System.out.println("机构name = "+jigouModel.getName());
+
+
 		//关联消息测试
 		String canonicalPath3 = new File("..").getCanonicalPath();
 		File file = new File(canonicalPath3+"/data.json");
@@ -74,6 +96,8 @@ public class Test {
 		RelationModel relationModel = JSONObject.parseObject(content, RelationModel.class);
 
 		System.out.println("relationModel = "+relationModel);
+
+
 	}
 	
 	private static void sendYunData(String s_id, int flag, int curSpeed, int curResistance, int spasmTimes, int spasticity,
