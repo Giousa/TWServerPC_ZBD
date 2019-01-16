@@ -46,18 +46,34 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             if(mServerReadListener != null){
                 mServerReadListener.onServerReadListener(data);
 
+                String deviceId = null;
+
                 if (data.contains("{") && data.contains("passiveMileage") && data.contains("}")){
                     PassiveModel passiveModel = JSON.parseObject(data, PassiveModel.class);
-                    mDeviceMaps.put(passiveModel.getLoginId(),ctx);
+//                    mDeviceMaps.put(passiveModel.getLoginId(),ctx);
+
+                    deviceId = passiveModel.getLoginId();
 
 
                 }else if (data.contains("{") && data.contains("activeMileage") && data.contains("}")){
                     ActiveModel activeModel = JSON.parseObject(data, ActiveModel.class);
-                    mDeviceMaps.put(activeModel.getLoginId(),ctx);
+//                    mDeviceMaps.put(activeModel.getLoginId(),ctx);
+                    deviceId = activeModel.getLoginId();
 
                 }
 
-                mServerReadListener.onDeviceconnect(mDeviceMaps);
+                ChannelHandlerContext channelHandlerContext = mDeviceMaps.get(deviceId);
+
+                if(channelHandlerContext == null || !ctx.equals(channelHandlerContext)){
+
+                    System.out.println("netty连接成功11111111：：ctx = "+ctx);
+
+                    mDeviceMaps.put(deviceId,ctx);
+
+                    mServerReadListener.onDeviceconnect(mDeviceMaps);
+
+                }
+
 
             }
             buf.release();
@@ -68,7 +84,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
-        System.out.println("netty连接成功：：ctx = "+ctx);
+        System.out.println("netty连接成功222222222：：ctx = "+ctx);
     }
 
     @Override

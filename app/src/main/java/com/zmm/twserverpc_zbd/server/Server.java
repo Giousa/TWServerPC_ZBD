@@ -81,6 +81,9 @@ public class Server {
     //存储连接数组
     private static Map<String,ChannelHandlerContext> mDeviceMaps = new HashMap<>();
 
+    //推送  待运行设备关联信息
+    private static List<RelationModel.DataBean> mDataBeanList;
+
 
     public static void main(String[] args) throws Exception{
 
@@ -117,33 +120,16 @@ public class Server {
 
                                 @Override
                                 public void onDeviceUnconnect(String deviceId) {
-                                    if(mWebSocketSession != null){
 
-                                        MessageModel messageModel = new MessageModel();
-                                        messageModel.setId(UUID.randomUUID().toString());
-                                        messageModel.setCode("4003");
-                                        messageModel.setCreateTime(System.currentTimeMillis());
-
-                                        List<String> devicesList = new ArrayList<>();
-                                        devicesList.add(deviceId);
-                                        messageModel.setData(devicesList);
-
-                                        String textMsg = JSON.toJSONString(messageModel);
-
-                                        System.out.println("断开设备数据：textMsg = "+textMsg);
-
-                                        TextMessage textMessage = new TextMessage(textMsg);
-                                        try {
-                                            mWebSocketSession.sendMessage(textMessage);
-                                        } catch (Exception e) {
-                                            e.printStackTrace();
-                                        }
-                                    }
+                                    sendDeviceOffline(deviceId);
                                 }
 
                                 @Override
                                 public void onDeviceconnect(Map<String, ChannelHandlerContext> map) {
                                     mDeviceMaps = map;
+
+                                    sendDeviceListOnline();
+
                                 }
                             });
                             ch.pipeline().addLast(serverHandler);
@@ -691,32 +677,7 @@ public class Server {
             System.out.println("websocket ：： 连接成功");
             mWebSocketSession = webSocketSession;
 
-            if(mDeviceMaps != null && mDeviceMaps.size() > 0){
-
-                MessageModel messageModel = new MessageModel();
-                messageModel.setId(UUID.randomUUID().toString());
-                messageModel.setCode("2001");
-                messageModel.setCreateTime(System.currentTimeMillis());
-
-                List<String> devicesList = new ArrayList<>();
-
-                for(Map.Entry<String,ChannelHandlerContext> entry : mDeviceMaps.entrySet()){
-                    devicesList.add(entry.getKey());
-                }
-
-                messageModel.setData(devicesList);
-
-                String textMsg = JSON.toJSONString(messageModel);
-
-                System.out.println("上线设备数据：textMsg = "+textMsg);
-
-                TextMessage textMessage = new TextMessage(textMsg);
-                try {
-                    mWebSocketSession.sendMessage(textMessage);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+            sendDeviceListOnline();
 
         }
 
@@ -729,6 +690,8 @@ public class Server {
 
             RelationModel relationModel = JSONObject.parseObject(payload, RelationModel.class);
             System.out.println("relationModel = "+relationModel);
+
+            mDataBeanList = relationModel.getData();
 
         }
 
@@ -746,6 +709,108 @@ public class Server {
         }
     }
 
+
+
+
+
+    /**
+     * 上传在线设备列表
+     */
+    private static void sendDeviceListOnline(){
+
+        if(mWebSocketSession != null && mDeviceMaps != null && mDeviceMaps.size() > 0){
+
+            System.out.println("当前在线设备列表："+mDeviceMaps.toString());
+
+            MessageModel messageModel = new MessageModel();
+            messageModel.setId(UUID.randomUUID().toString());
+            messageModel.setCode("2001");
+            messageModel.setCreateTime(System.currentTimeMillis());
+
+            List<String> devicesList = new ArrayList<>();
+
+            for(Map.Entry<String,ChannelHandlerContext> entry : mDeviceMaps.entrySet()){
+                devicesList.add(entry.getKey());
+            }
+
+            messageModel.setData(devicesList);
+
+            String textMsg = JSON.toJSONString(messageModel);
+
+            System.out.println("注意：：在线设备列表 =  "+textMsg);
+
+            TextMessage textMessage = new TextMessage(textMsg);
+            try {
+                mWebSocketSession.sendMessage(textMessage);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * 上传离线设备
+     * @param deviceId
+     */
+    private static void sendDeviceOffline(String deviceId){
+
+        if(mWebSocketSession != null && deviceId != null){
+
+            MessageModel messageModel = new MessageModel();
+            messageModel.setId(UUID.randomUUID().toString());
+            messageModel.setCode("4003");
+            messageModel.setCreateTime(System.currentTimeMillis());
+
+            List<String> devicesList = new ArrayList<>();
+            devicesList.add(deviceId);
+            messageModel.setData(devicesList);
+
+            String textMsg = JSON.toJSONString(messageModel);
+
+            System.out.println("注意：：离线设备 =  "+textMsg);
+
+            TextMessage textMessage = new TextMessage(textMsg);
+            try {
+                mWebSocketSession.sendMessage(textMessage);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+
+    /**
+     * 上传运行设备列表   游戏start的时候，发送
+     */
+    private static void sendDeviceListRunning(){
+
+        if(mWebSocketSession != null && mDataBeanList != null && mDataBeanList.size() > 0){
+
+            MessageModel messageModel = new MessageModel();
+            messageModel.setId(UUID.randomUUID().toString());
+            messageModel.setCode("2002");
+            messageModel.setCreateTime(System.currentTimeMillis());
+
+            List<String> devicesList = new ArrayList<>();
+
+            for (int i = 0; i < mDataBeanList.size(); i++) {
+                devicesList.add(mDataBeanList.get(i).getDeviceId());
+            }
+            messageModel.setData(devicesList);
+
+            String textMsg = JSON.toJSONString(messageModel);
+
+            System.out.println("注意：：运行设备列表 =  "+textMsg);
+
+            TextMessage textMessage = new TextMessage(textMsg);
+            try {
+                mWebSocketSession.sendMessage(textMessage);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private static void reconnectWebsocket(){
         ThreadUtils.runOnBackgroundThread(new Runnable() {
             @Override
@@ -756,8 +821,9 @@ public class Server {
 
                     System.out.println("----------------------------------");
                     try {
-                        Thread.sleep(5000);
+                        Thread.sleep(10000);
                         mSocketClient.start();
+                        //TODO 待改动。
                         byte[] bytes = receiveUDPData();
 
                     } catch (Exception e) {
