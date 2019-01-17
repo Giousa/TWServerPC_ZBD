@@ -99,4 +99,20 @@ public class PassiveModel {
     public void setSpasmLevel(String spasmLevel) {
         this.spasmLevel = spasmLevel;
     }
+
+    @Override
+    public String toString() {
+        return "PassiveModel{" +
+                "loginId='" + loginId + '\'' +
+                ", s_id='" + s_id + '\'' +
+                ", s_name='" + s_name + '\'' +
+                ", curSpeed='" + curSpeed + '\'' +
+                ", curResistance='" + curResistance + '\'' +
+                ", curDirection='" + curDirection + '\'' +
+                ", calories='" + calories + '\'' +
+                ", passiveMileage='" + passiveMileage + '\'' +
+                ", spasmTimes='" + spasmTimes + '\'' +
+                ", spasmLevel='" + spasmLevel + '\'' +
+                '}';
+    }
 }

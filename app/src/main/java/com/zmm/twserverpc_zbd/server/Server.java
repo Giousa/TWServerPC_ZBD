@@ -120,12 +120,15 @@ public class Server {
 
                                 @Override
                                 public void onDeviceUnconnect(String deviceId) {
+                                    System.out.println("Server::onDeviceUnconnect 断开id = "+deviceId);
 
                                     sendDeviceOffline(deviceId);
                                 }
 
                                 @Override
                                 public void onDeviceconnect(Map<String, ChannelHandlerContext> map) {
+                                    System.out.println("Server::onDeviceconnect 在线id = "+map);
+
                                     mDeviceMaps = map;
 
                                     sendDeviceListOnline();
@@ -149,6 +152,7 @@ public class Server {
             reconnectWebsocket();
 
             System.out.println("服务器开启:");
+
             ch.closeFuture().sync();
         } catch (Exception e){
             e.printStackTrace();
@@ -198,7 +202,6 @@ public class Server {
 
 
         if (data.contains("maxSpeed") || data.contains("maxResistance")) {
-            mEndTime = System.currentTimeMillis();
             gameOver();
         } else if (data.contains("passiveMileage")) {
             passiveModel(data);
@@ -220,85 +223,81 @@ public class Server {
     private static int spasmLevel = 1;
     
     private static void passiveModel(String msg) {
-        if (msg.contains("{") && msg.contains("spasmLevel") && msg.contains("passiveMileage")  &&  msg.contains("curResistance") && msg.contains("curSpeed") && msg.contains("}")) {
-            PassiveModel passiveModel = JSON.parseObject(msg, PassiveModel.class);
-            byte flag = 1;
-            byte speed = (byte) Integer.parseInt(passiveModel.getCurSpeed());
-            byte resistance = (byte) Integer.parseInt(passiveModel.getCurResistance());
-            byte spasm = (byte) Integer.parseInt(passiveModel.getSpasmTimes());
-            byte level = (byte) Integer.parseInt(passiveModel.getSpasmLevel());
-            spasmLevel = Integer.parseInt(passiveModel.getSpasmLevel());
-            int cal = (int) (Double.parseDouble(passiveModel.getCalories()) * 1000);
-            int mil = (int) (Double.parseDouble(passiveModel.getPassiveMileage()) * 1000);
-            byte[] id = strToByteArray(passiveModel.getLoginId());
-            if(speed < 0){
-                speed = (byte) (speed+128);
-            }
-            mPassiveMil = mil;
-            mSpasmLevel = level;
-            byte offset = 0;
-            int v = 5000;
+        PassiveModel passiveModel = JSON.parseObject(msg, PassiveModel.class);
+        byte flag = 1;
+        byte speed = (byte) Integer.parseInt(passiveModel.getCurSpeed());
+        byte resistance = (byte) Integer.parseInt(passiveModel.getCurResistance());
+        byte spasm = (byte) Integer.parseInt(passiveModel.getSpasmTimes());
+        byte level = (byte) Integer.parseInt(passiveModel.getSpasmLevel());
+        spasmLevel = Integer.parseInt(passiveModel.getSpasmLevel());
+        int cal = (int) (Double.parseDouble(passiveModel.getCalories()) * 1000);
+        int mil = (int) (Double.parseDouble(passiveModel.getPassiveMileage()) * 1000);
+        byte[] id = strToByteArray(passiveModel.getLoginId());
+        if(speed < 0){
+            speed = (byte) (speed+128);
+        }
+        mPassiveMil = mil;
+        mSpasmLevel = level;
+        byte offset = 0;
+        int v = 5000;
 
-            isPause = false;
+        isPause = false;
 
-            //发送游戏
-            sendUDPData(flag, speed, resistance, spasm, offset, cal, mil, v,id);
+        //发送游戏
+        sendUDPData(flag, speed, resistance, spasm, offset, cal, mil, v,id);
 
-            //发送服务器
+        //发送服务器
 //            sendYunData(passiveModel.getS_id(),1,Integer.parseInt(passiveModel.getCurSpeed()),
 //            		Integer.parseInt(passiveModel.getCurResistance()),Integer.parseInt(passiveModel.getSpasmTimes()),
 //            		spasmLevel,0,0,1);
 
 
-            //存储
-            List<String> strings = mAllMaps.get(passiveModel.getLoginId());
-            if(strings == null){
-                strings = new ArrayList<>();
-            }
-
-            strings.add(msg);
-            mAllMaps.put(passiveModel.getLoginId(),strings);
+        //存储
+        List<String> strings = mAllMaps.get(passiveModel.getLoginId());
+        if(strings == null){
+            strings = new ArrayList<>();
         }
+
+        strings.add(msg);
+        mAllMaps.put(passiveModel.getLoginId(),strings);
     }
 
  
 
 	private static void activeModel(String msg) {
-        if (msg.contains("{") && msg.contains("offset") && msg.contains("activeMileage") && msg.contains("curSpeed") && msg.contains("}")) {
-            ActiveModel activeModel = JSON.parseObject(msg, ActiveModel.class);
-            byte flag = 0;
-            byte speed = (byte) Integer.parseInt(activeModel.getCurSpeed());
-            byte resistance = (byte) (Integer.parseInt(activeModel.getCurResistance())+1);
-            byte spasm = (byte) Integer.parseInt(activeModel.getSpasmTimes());
-            int cal = (int) (Double.parseDouble(activeModel.getCalories()) * 1000);
-            int mil = (int) (Double.parseDouble(activeModel.getActiveMileage()) * 1000);
-            byte[] id = strToByteArray(activeModel.getLoginId());
-            if(speed < 0){
-                speed = (byte) (speed+128);
-            }
-            mActiveMil = mil;
-            byte offset = Byte.parseByte(activeModel.getOffset());
-            int v = (15 - offset) * 10000 / 30;
+        ActiveModel activeModel = JSON.parseObject(msg, ActiveModel.class);
+        byte flag = 0;
+        byte speed = (byte) Integer.parseInt(activeModel.getCurSpeed());
+        byte resistance = (byte) (Integer.parseInt(activeModel.getCurResistance())+1);
+        byte spasm = (byte) Integer.parseInt(activeModel.getSpasmTimes());
+        int cal = (int) (Double.parseDouble(activeModel.getCalories()) * 1000);
+        int mil = (int) (Double.parseDouble(activeModel.getActiveMileage()) * 1000);
+        byte[] id = strToByteArray(activeModel.getLoginId());
+        if(speed < 0){
+            speed = (byte) (speed+128);
+        }
+        mActiveMil = mil;
+        byte offset = Byte.parseByte(activeModel.getOffset());
+        int v = (15 - offset) * 10000 / 30;
 
-            isPause = false;
+        isPause = false;
 
-            //发送游戏
-            sendUDPData(flag, speed, resistance, spasm, offset, cal, mil, v,id);
+        //发送游戏
+        sendUDPData(flag, speed, resistance, spasm, offset, cal, mil, v,id);
 
-            //发送服务器
+        //发送服务器
 //            sendYunData(activeModel.getS_id(),0,Integer.parseInt(activeModel.getCurSpeed()),
 //            		Integer.parseInt(activeModel.getCurResistance()),Integer.parseInt(activeModel.getSpasmTimes()),
 //            		spasmLevel,Integer.parseInt(activeModel.getOffset()),0,1);
 
-            //存储
-            List<String> strings = mAllMaps.get(activeModel.getLoginId());
-            if(strings == null){
-                strings = new ArrayList<>();
-            }
-
-            strings.add(msg);
-            mAllMaps.put(activeModel.getLoginId(),strings);
+        //存储
+        List<String> strings = mAllMaps.get(activeModel.getLoginId());
+        if(strings == null){
+            strings = new ArrayList<>();
         }
+
+        strings.add(msg);
+        mAllMaps.put(activeModel.getLoginId(),strings);
     }
 	
    private static void sendYunData(final String s_id, final int flag, final int curSpeed, final int curResistance, final int spasmTimes, final int spasticity,
@@ -469,6 +468,9 @@ public class Server {
 
         //游戏结束，将推送数据置空
         mDataBeanList = null;
+
+        mEndTime = System.currentTimeMillis();
+
 
         if(mAllMaps != null && mAllMaps.size() > 0){
             for (Map.Entry<String, List<String>> entry : mAllMaps.entrySet()) {
@@ -666,6 +668,10 @@ public class Server {
 
         isOver = true;
 
+        //TODO 后面需要在游戏开始时，使用
+        mStartTime = System.currentTimeMillis();
+
+
     }
 
     public static class MySocketHandler implements WebSocketHandler {
@@ -682,13 +688,13 @@ public class Server {
 
         @Override
         public void handleMessage(WebSocketSession webSocketSession, WebSocketMessage<?> webSocketMessage) throws Exception {
-            System.out.println("websocket ：： 消息处理");
+            System.out.println("接收数据：：websocket ：： 消息处理");
 
             TextMessage textMessage = (TextMessage) webSocketMessage;
             String payload = textMessage.getPayload();
 
             RelationModel relationModel = JSONObject.parseObject(payload, RelationModel.class);
-            System.out.println("relationModel = "+relationModel);
+            System.out.println("接收数据：：relationModel = "+relationModel);
 
             //每次推送，之前存储数据置空
             mDataBeanList = null;
@@ -749,7 +755,7 @@ public class Server {
 
             String textMsg = JSON.toJSONString(messageModel);
 
-            System.out.println("注意：：在线设备列表 =  "+textMsg);
+            System.out.println("发送：：在线设备列表 =  "+textMsg);
 
             TextMessage textMessage = new TextMessage(textMsg);
             try {
@@ -770,7 +776,7 @@ public class Server {
 
             MessageModel messageModel = new MessageModel();
             messageModel.setId(UUID.randomUUID().toString());
-            messageModel.setCode("4003");
+            messageModel.setCode("2003");
             messageModel.setCreateTime(System.currentTimeMillis());
 
             List<String> devicesList = new ArrayList<>();
@@ -779,7 +785,7 @@ public class Server {
 
             String textMsg = JSON.toJSONString(messageModel);
 
-            System.out.println("注意：：离线设备 =  "+textMsg);
+            System.out.println("发送：：离线设备 =  "+textMsg);
 
             TextMessage textMessage = new TextMessage(textMsg);
             try {
@@ -812,7 +818,7 @@ public class Server {
 
             String textMsg = JSON.toJSONString(messageModel);
 
-            System.out.println("注意：：运行设备列表 =  "+textMsg);
+            System.out.println("发送：：运行设备列表 =  "+textMsg);
 
             TextMessage textMessage = new TextMessage(textMsg);
             try {
@@ -824,28 +830,24 @@ public class Server {
     }
 
     private static void reconnectWebsocket(){
-        ThreadUtils.runOnBackgroundThread(new Runnable() {
-            @Override
-            public void run() {
+        while (true){
 
-
-                while (true){
-
-                    try {
-                        Thread.sleep(10000);
-                        mSocketClient.start();
-                        //TODO 待改动。
-                        receiveWaitData();
-
-                    } catch (Exception e) {
-                        System.out.println("长连接异常");
-                        e.printStackTrace();
-
-                    }
+            try {
+                Thread.sleep(5000);
+                WebSocketSession session = mSocketClient.start();
+                if(session != null){
+                    break;
                 }
 
+                //TODO 待改动。
+//                receiveWaitData();
+
+            } catch (Exception e) {
+                System.out.println("长连接异常");
+                e.printStackTrace();
+
             }
-        });
+        }
     }
 
     private static byte[] receiveWaitData() {

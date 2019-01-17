@@ -8,11 +8,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.HttpContent;
 import io.netty.util.CharsetUtil;
 
+@ChannelHandler.Sharable
 public class ServerHandler extends ChannelInboundHandlerAdapter {
 
     private ServerReadListener mServerReadListener;
@@ -43,21 +45,19 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             ByteBuf buf = content.content();
             String data = buf.toString(CharsetUtil.UTF_8).substring(12);
 
-            if(mServerReadListener != null){
+            if(mServerReadListener != null && data.contains("{") && data.contains("}")){
+
                 mServerReadListener.onServerReadListener(data);
 
                 String deviceId = null;
 
-                if (data.contains("{") && data.contains("passiveMileage") && data.contains("}")){
+                if (data.contains("passiveMileage")){
                     PassiveModel passiveModel = JSON.parseObject(data, PassiveModel.class);
-//                    mDeviceMaps.put(passiveModel.getLoginId(),ctx);
-
                     deviceId = passiveModel.getLoginId();
 
 
-                }else if (data.contains("{") && data.contains("activeMileage") && data.contains("}")){
+                }else if (data.contains("activeMileage")){
                     ActiveModel activeModel = JSON.parseObject(data, ActiveModel.class);
-//                    mDeviceMaps.put(activeModel.getLoginId(),ctx);
                     deviceId = activeModel.getLoginId();
 
                 }
@@ -114,7 +114,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
-        System.out.println("channelReadComplete：：ctx = "+ctx);
+//        System.out.println("channelReadComplete：：ctx = "+ctx);
 
         ctx.flush();
     }
