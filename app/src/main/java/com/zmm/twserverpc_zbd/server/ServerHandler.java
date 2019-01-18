@@ -45,18 +45,18 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
             ByteBuf buf = content.content();
             String data = buf.toString(CharsetUtil.UTF_8).substring(12);
 
-            if(mServerReadListener != null && data.contains("{") && data.contains("}")){
+            if(mServerReadListener != null){
 
                 mServerReadListener.onServerReadListener(data);
 
                 String deviceId = null;
 
-                if (data.contains("passiveMileage")){
+                if (data.contains("{") && data.contains("}") && data.contains("passiveMileage")){
                     PassiveModel passiveModel = JSON.parseObject(data, PassiveModel.class);
                     deviceId = passiveModel.getLoginId();
 
 
-                }else if (data.contains("activeMileage")){
+                }else if (data.contains("{") && data.contains("}") && data.contains("activeMileage")){
                     ActiveModel activeModel = JSON.parseObject(data, ActiveModel.class);
                     deviceId = activeModel.getLoginId();
 

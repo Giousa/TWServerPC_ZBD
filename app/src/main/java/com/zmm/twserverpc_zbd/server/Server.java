@@ -215,13 +215,13 @@ public class Server {
 
 
 
-        if (data.contains("passiveMileage")) {
+        if (data.contains("{") && data.contains("}") && data.contains("passiveMileage")) {
             passiveModel(data);
 //            if(!isPause){
 //                sendUDPDataUnPause();
 //            }
 
-        } else if (data.contains("activeMileage")) {
+        } else if (data.contains("{") && data.contains("}") && data.contains("activeMileage")) {
             activeModel(data);
 //            if(!isPause){
 //                sendUDPDataUnPause();
@@ -229,7 +229,7 @@ public class Server {
         } else if (data.contains("activeDuration")) {
             gameOver(data.substring(12,24));
 
-        } else if (data.contains("beginTime")) {
+        } else if (data.contains("{") && data.contains("}") && data.contains("beginTime")) {
 //            isPause = true;
             gamePause(data);
         }
@@ -398,6 +398,8 @@ public class Server {
      * @param msg
      */
     private static void sendSocketDataToGame(String msg){
+
+        System.out.println("---------开始发送数据到游戏---------");
 
         try {
             byte[] bys = msg.getBytes();
