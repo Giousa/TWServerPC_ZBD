@@ -97,8 +97,15 @@ public class Test {
 
 		System.out.println("relationModel = "+relationModel);
 
+		String testStr = "{\"loginId\":\"C893466C9963\",\"s_id\":\"C893466C9963\",\"s_name\":\"RKF-1\",\"beginTime\":\"00:05:51\",\"endTime\":\"00:11:06\",\"activeDuration\":\"2\",\"passsiveDuration\":\"292\",\"averageSpeed\":\"0\",\"maxSpeed\":\"103\",\"maxResistance\":\"0\",\"meanResistance\":\"";
 
-	}
+		System.out.println("testStr = "+testStr);
+        String substring = testStr.substring(12, 24);
+
+        System.out.println("substring = "+substring);
+
+
+    }
 	
 	private static void sendYunData(String s_id, int flag, int curSpeed, int curResistance, int spasmTimes, int spasticity,
 			int offset, int curDirection, int smartMode) {
