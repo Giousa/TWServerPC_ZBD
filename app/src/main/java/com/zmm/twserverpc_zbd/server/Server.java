@@ -69,6 +69,7 @@ public class Server {
     //计算汇总数据参数
     private static boolean isStart = false;
     private static boolean isOver = false;
+    private static boolean isExit = false;
     private static long mStartTime;
     private static long mEndTime;
     //数据汇总
@@ -118,9 +119,11 @@ public class Server {
                             serverHandler.setServerReadListener(new ServerHandler.ServerReadListener() {
                                 @Override
                                 public void onServerReadListener(String msg) {
-                                	System.out.println("客户端消息:"+msg);
-                                    isOver = false;
-                                    mDataList.add(msg);
+
+                                    if(isStart){
+                                        System.out.println("客户端消息:"+msg);
+                                        mDataList.add(msg);
+                                    }
                                 }
 
                                 @Override
@@ -222,7 +225,6 @@ public class Server {
 //                }
 //            }
 //        }
-
 
 
         if (data.contains("{") && data.contains("}") && data.contains("passiveMileage")) {
@@ -394,12 +396,12 @@ public class Server {
 
 
         //TODO 模拟结束，后期需修订
-        ThreadUtils.runOnBackgroundThread(new Runnable() {
-            @Override
-            public void run() {
-                reportBuild();
-            }
-        });
+//        ThreadUtils.runOnBackgroundThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                reportBuild();
+//            }
+//        });
     }
 
 
@@ -447,6 +449,24 @@ public class Server {
             String data = new String(dp.getData(), 0, dp.getLength());
 
             System.out.println("Server-PC 获取游戏返回数据："+ data);
+
+            switch (data){
+                case "gameover":
+                    isStart = false;
+
+                    reportBuild();
+
+                    break;
+
+                case "exit":
+
+                    break;
+
+                case "start":
+                    mStartTime = System.currentTimeMillis();
+                    isStart = true;
+                    break;
+            }
         }
     }
 
@@ -788,13 +808,6 @@ public class Server {
 
             }
         }
-
-
-        isOver = true;
-
-        //TODO 后面需要在游戏开始时，使用
-        mStartTime = System.currentTimeMillis();
-
 
     }
 

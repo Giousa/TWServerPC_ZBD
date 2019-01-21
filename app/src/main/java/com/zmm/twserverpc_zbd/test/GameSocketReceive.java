@@ -4,11 +4,14 @@ import com.alibaba.fastjson.JSON;
 import com.zmm.twserverpc_zbd.socket.SocketMsg;
 import com.zmm.twserverpc_zbd.socket.SocketRelation;
 import com.zmm.twserverpc_zbd.socket.SocketStatus;
+import com.zmm.twserverpc_zbd.utils.ThreadUtils;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Description:
@@ -31,6 +34,8 @@ public class GameSocketReceive {
         // 创建发送端Socket对象
         mDatagramSocket = new DatagramSocket();
 
+        sendDataToPC();
+
         // 创建数据包
         while (true) {
 
@@ -44,17 +49,6 @@ public class GameSocketReceive {
             String data = new String(dp.getData(), 0, dp.getLength());
 
             paseData(data);
-
-            index++;
-
-            //每隔10s，反馈消息
-            if(index%10 == 0){
-                sendSocketDataToGame("gameover");//游戏正常结束
-            }else if(index%10 == 2){
-                sendSocketDataToGame("exit");//游戏退出
-            }else if(index%10 == 7){
-                sendSocketDataToGame("start");//游戏开始
-            }
 
         }
     }
@@ -104,6 +98,29 @@ public class GameSocketReceive {
         System.out.println("SocketReceive：："+socketStatus.toString());
 
     }
+
+    private static void sendDataToPC() {
+
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            public void run() {
+                index++;
+
+                //每隔10s，反馈消息
+                if(index%290 == 0){
+                    sendSocketDataToGame("gameover");//游戏正常结束
+                }else if(index%11 == 0){
+                    sendSocketDataToGame("exit");//游戏退出
+                }else if(index%300 == 0){
+                    sendSocketDataToGame("start");//游戏开始
+                }else if(index == 10){
+                    sendSocketDataToGame("start");//游戏开始
+                }
+            }
+        }, 0, 1000);
+
+    }
+
 
     /**
      * 发送数据到PC
