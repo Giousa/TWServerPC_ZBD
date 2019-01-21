@@ -8,6 +8,7 @@ import com.zmm.twserverpc_zbd.socket.SocketStatus;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 
 /**
  * Description:
@@ -17,10 +18,18 @@ import java.net.DatagramSocket;
  */
 public class GameSocketReceive {
 
+    private static int index = 0;
+
+    //游戏-PC  socket通信
+    private static DatagramSocket mDatagramSocket;
+
     public static void main(String[] args) throws IOException {
 
         // 创建接收端Socket对象
         DatagramSocket ds = new DatagramSocket(12008);
+
+        // 创建发送端Socket对象
+        mDatagramSocket = new DatagramSocket();
 
         // 创建数据包
         while (true) {
@@ -35,6 +44,17 @@ public class GameSocketReceive {
             String data = new String(dp.getData(), 0, dp.getLength());
 
             paseData(data);
+
+            index++;
+
+            //每隔10s，反馈消息
+            if(index%10 == 0){
+                sendSocketDataToGame("gameover");//游戏正常结束
+            }else if(index%10 == 2){
+                sendSocketDataToGame("exit");//游戏退出
+            }else if(index%10 == 7){
+                sendSocketDataToGame("start");//游戏开始
+            }
 
         }
     }
@@ -85,4 +105,25 @@ public class GameSocketReceive {
 
     }
 
+    /**
+     * 发送数据到PC
+     * @param msg
+     */
+    private static void sendSocketDataToGame(String msg){
+
+        System.out.println("---------开始发送数据到PC---------");
+
+        try {
+            byte[] bys = msg.getBytes();
+
+            DatagramPacket dp = new DatagramPacket(bys, bys.length, InetAddress.getByName("127.0.0.1"), 12009);
+
+            // 发送数据
+            mDatagramSocket.send(dp);
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
 }

@@ -24,6 +24,7 @@ import com.zzwloves.netty.websocket.handler.WebSocketHandler;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -164,6 +165,17 @@ public class Server {
                 }
             });
 
+            ThreadUtils.runOnBackgroundThread(new Runnable() {
+                @Override
+                public void run() {
+
+                    try {
+                        receiveGameData();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
 
             System.out.println("服务器开启:");
 
@@ -176,8 +188,6 @@ public class Server {
         }
 
     }
-
-
 
 
     private static void sendData() {
@@ -414,6 +424,33 @@ public class Server {
         }
 
     }
+
+
+    /**
+     * 获取游戏返回数据
+     */
+    private static void receiveGameData() throws IOException {
+
+        // 创建接收端Socket对象
+        DatagramSocket ds = new DatagramSocket(12009);
+
+        // 创建数据包
+        while (true) {
+
+            byte[] bys = new byte[1024];
+            DatagramPacket dp = new DatagramPacket(bys, bys.length);
+
+            // //接收数据
+            ds.receive(dp);
+
+            // 解析数据
+            String data = new String(dp.getData(), 0, dp.getLength());
+
+            System.out.println("Server-PC 获取游戏返回数据："+ data);
+        }
+    }
+
+
 
     /**
      * 发送主动或被动数据
@@ -918,6 +955,8 @@ public class Server {
             }
         }
     }
+
+
 
     /**
      * 重连websocket
