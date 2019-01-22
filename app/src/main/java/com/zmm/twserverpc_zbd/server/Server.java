@@ -3,6 +3,7 @@ package com.zmm.twserverpc_zbd.server;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.zmm.twserverpc_zbd.client.model.ActiveModel;
+import com.zmm.twserverpc_zbd.client.model.JigouIdsModel;
 import com.zmm.twserverpc_zbd.client.model.JigouModel;
 import com.zmm.twserverpc_zbd.client.model.MessageModel;
 import com.zmm.twserverpc_zbd.client.model.PassiveModel;
@@ -76,7 +77,6 @@ public class Server {
     private static Map<String,List<String>> mAllMaps = new HashMap<>();
     private static WebSocketClient mSocketClient;
     private static MySocketHandler mMySocketHandler;
-    private static JigouModel mJigouModel;
 
     //websocket
     private static WebSocketSession mWebSocketSession;
@@ -96,11 +96,20 @@ public class Server {
         mStartTime = System.currentTimeMillis();
 
         String canonicalPath3 = new File("..").getCanonicalPath();
+        //机构名称和服务名称
         File file = new File(canonicalPath3+"/jigou.json");
         String content= FileUtils.readFileToString(file,"UTF-8");
-        mJigouModel = JSONObject.parseObject(content, JigouModel.class);
+        JigouModel jigouModel = JSONObject.parseObject(content, JigouModel.class);
 
-        final String url = "ws://172.28.6.73:8080/websocket?type=device&deviceType=activePassiveServer&id="+mJigouModel.getId();
+        //机构id和服务id
+        File file2 = new File(canonicalPath3+"/id.json");
+        String contentId= FileUtils.readFileToString(file2,"UTF-8");
+        JigouIdsModel jigouIdsModel = JSONObject.parseObject(contentId, JigouIdsModel.class);
+
+        final String url = "ws://172.28.6.73:8080/websocket?type=device&deviceType=activePassiveServer&orgId="
+                +jigouIdsModel.getOrgId()+"&pcServerId="+jigouIdsModel.getPcServerId()+"&pcServerName="+jigouModel.getPcServerName();
+
+        System.out.println("长连接url = "+url);
 
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup(4);
@@ -130,19 +139,34 @@ public class Server {
                                 public void onDeviceUnconnect(String deviceId) {
                                     System.out.println("Server::onDeviceUnconnect 断开id = "+deviceId);
 
+                                    mDeviceMaps.remove(deviceId);
+
                                     sendDeviceOffline(deviceId);
                                 }
 
                                 @Override
+                                public void onDeviceconnect(String deviceId,ChannelHandlerContext ctx) {
+
+                                    System.out.println("Server::onDeviceconnect 在线id = "+deviceId);
+
+                                    mDeviceMaps.put(deviceId,ctx);
+
+                                    sendDeviceSingleOnline(deviceId);
+
+                                }
+
+                                @Override
                                 public void onDeviceconnect(Map<String, ChannelHandlerContext> map) {
-                                    System.out.println("Server::onDeviceconnect 在线id = "+map);
-
-                                    mDeviceMaps = map;
-
-                                    sendDeviceListOnline();
+//                                    System.out.println("Server::onDeviceconnect 在线id = "+map);
+//
+//                                    mDeviceMaps = map;
+//
+//                                    //TODO 在发送在线前，判断是否游戏中
+//                                    sendDeviceListOnline();
 
                                 }
                             });
+
                             ch.pipeline().addLast(serverHandler);
                         }
                     });
@@ -859,6 +883,38 @@ public class Server {
 
 
 
+    /**
+     * 上传单个在线设备
+     */
+    private static void sendDeviceSingleOnline(String deviceId){
+
+        if(mWebSocketSession != null){
+
+            System.out.println("当前单个在线设备："+deviceId);
+
+            MessageModel messageModel = new MessageModel();
+            messageModel.setId(UUID.randomUUID().toString());
+            messageModel.setCode("2001");
+            messageModel.setCreateTime(System.currentTimeMillis());
+
+            List<String> devicesList = new ArrayList<>();
+            devicesList.add(deviceId);
+
+            messageModel.setData(devicesList);
+
+            String textMsg = JSON.toJSONString(messageModel);
+
+            System.out.println("发送：：单个在线设备列表 =  "+textMsg);
+
+            TextMessage textMessage = new TextMessage(textMsg);
+            try {
+                mWebSocketSession.sendMessage(textMessage);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 
 
     /**
@@ -895,7 +951,7 @@ public class Server {
 
             String textMsg = JSON.toJSONString(messageModel);
 
-            System.out.println("发送：：在线设备列表 =  "+textMsg);
+            System.out.println("发送：：多个在线设备列表 =  "+textMsg);
 
             TextMessage textMessage = new TextMessage(textMsg);
             try {

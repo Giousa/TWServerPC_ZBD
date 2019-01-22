@@ -28,7 +28,10 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
         void onDeviceUnconnect(String deviceId);
 
+        void onDeviceconnect( String deviceId,ChannelHandlerContext ctx);
+
         void onDeviceconnect( Map<String,ChannelHandlerContext> map);
+
     }
 
     public void setServerReadListener(ServerReadListener serverReadListener) {
@@ -70,7 +73,9 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
                     mDeviceMaps.put(deviceId,ctx);
 
-                    mServerReadListener.onDeviceconnect(mDeviceMaps);
+//                    mServerReadListener.onDeviceconnect(mDeviceMaps);
+
+                    mServerReadListener.onDeviceconnect(deviceId,ctx);
 
                 }
 
@@ -95,15 +100,15 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         if(mDeviceMaps != null && mDeviceMaps.size() > 0){
 
             for(Map.Entry<String,ChannelHandlerContext> entry : mDeviceMaps.entrySet()){
-                String key = entry.getKey();
+                String deviceId = entry.getKey();
                 ChannelHandlerContext value = entry.getValue();
 
-                mDeviceMaps.remove(key);
+                mDeviceMaps.remove(deviceId);
 
                 if(value.equals(ctx)){
 
                     if(mServerReadListener != null){
-                        mServerReadListener.onDeviceUnconnect(key);
+                        mServerReadListener.onDeviceUnconnect(deviceId);
                     }
 
                 }

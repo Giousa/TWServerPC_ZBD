@@ -8,24 +8,23 @@ package com.zmm.twserverpc_zbd.client.model;
  */
 public class JigouModel {
 
-    private String id;
+    private String orgName;
 
+    private String pcServerName;
 
-    private String name;
-
-    public String getId() {
-        return id;
+    public String getOrgName() {
+        return orgName;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setOrgName(String orgName) {
+        this.orgName = orgName;
     }
 
-    public String getName() {
-        return name;
+    public String getPcServerName() {
+        return pcServerName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setPcServerName(String pcServerName) {
+        this.pcServerName = pcServerName;
     }
 }
