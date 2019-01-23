@@ -826,6 +826,7 @@ public class Server {
                 reportModel.setAvgResistance(avgResistance);
                 reportModel.setMaxResistance(maxResistance);
                 reportModel.setSpeedRate(JSON.toJSONString(speedRate));
+                reportModel.setProvenance(2);
 
 
                 MyOkHttpUtils.sendReport(reportModel);

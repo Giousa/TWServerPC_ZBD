@@ -14,6 +14,10 @@ public class ReportModel implements Serializable{
 
     private String id;
 
+
+    //1：机顶盒  2：多机版PC
+    private int provenance;
+
     private int year;
     private int month;
 
@@ -56,6 +60,14 @@ public class ReportModel implements Serializable{
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public int getProvenance() {
+        return provenance;
+    }
+
+    public void setProvenance(int provenance) {
+        this.provenance = provenance;
     }
 
     public int getYear() {
