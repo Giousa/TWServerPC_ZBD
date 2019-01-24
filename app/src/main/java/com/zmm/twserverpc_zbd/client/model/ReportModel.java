@@ -18,6 +18,8 @@ public class ReportModel implements Serializable{
     //1：机顶盒  2：多机版PC
     private int provenance;
 
+    private int type = 1;
+
     private int year;
     private int month;
 
@@ -68,6 +70,14 @@ public class ReportModel implements Serializable{
 
     public void setProvenance(int provenance) {
         this.provenance = provenance;
+    }
+
+    public int getType() {
+        return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
     }
 
     public int getYear() {
