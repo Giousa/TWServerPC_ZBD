@@ -114,6 +114,9 @@ public class Server {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup(4);
 
+        //TODO  正式服 删除
+        isStart = true;
+
         try {
             ServerBootstrap bootstrap = new ServerBootstrap();
             bootstrap
@@ -1033,11 +1036,12 @@ public class Server {
      * 重连websocket
      */
     private static void reconnectWebsocket(){
-        while (true){
 
+        while (true){
             try {
-                mSocketClient.start();
                 Thread.sleep(5000);
+
+                mSocketClient.start();
 
             } catch (Exception e) {
                 System.out.println("长连接异常");
