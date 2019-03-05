@@ -31,6 +31,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +74,13 @@ public class Server {
     private static boolean isExit = false;
     private static long mStartTime;
     private static long mEndTime;
+
+    //总里程
+    private static Map<String,Float> mTotalMilMap = new HashMap<>();
+    //总卡路里
+    private static Map<String,Float> mTotalCalMap = new HashMap<>();
+
+
     //数据汇总
     private static Map<String,List<String>> mAllMaps = new HashMap<>();
     private static WebSocketClient mSocketClient;
@@ -256,71 +264,65 @@ public class Server {
 
         if (data.contains("{") && data.contains("}") && data.contains("passiveMileage")) {
             passiveModel(data);
-//            if(!isPause){
-//                sendUDPDataUnPause();
-//            }
 
         } else if (data.contains("{") && data.contains("}") && data.contains("activeMileage")) {
             activeModel(data);
-//            if(!isPause){
-//                sendUDPDataUnPause();
-//            }
+
         } else if (data.contains("activeDuration")) {
             gameOver(data.substring(12,24));
 
         } else if (data.contains("{") && data.contains("}") && data.contains("beginTime")) {
-//            isPause = true;
             gamePause(data);
         }
     }
     
     
-    private static int spasmLevel = 1;
-    
     private static void passiveModel(String msg) {
-//        PassiveModel passiveModel = JSON.parseObject(msg, PassiveModel.class);
-//        byte flag = 1;
-//        byte speed = (byte) Integer.parseInt(passiveModel.getCurSpeed());
-//        byte resistance = (byte) Integer.parseInt(passiveModel.getCurResistance());
-//        byte spasm = (byte) Integer.parseInt(passiveModel.getSpasmTimes());
-//        byte level = (byte) Integer.parseInt(passiveModel.getSpasmLevel());
-//        spasmLevel = Integer.parseInt(passiveModel.getSpasmLevel());
-//        int cal = (int) (Double.parseDouble(passiveModel.getCalories()) * 1000);
-//        int mil = (int) (Double.parseDouble(passiveModel.getPassiveMileage()) * 1000);
-//        byte[] id = strToByteArray(passiveModel.getLoginId());
-//        if(speed < 0){
-//            speed = (byte) (speed+128);
-//        }
-//        mPassiveMil = mil;
-//        mSpasmLevel = level;
-//        byte offset = 0;
-//        int v = 5000;
-//
-//        isPause = false;
-//
-//        //发送游戏
-//        sendUDPData(flag, speed, resistance, spasm, offset, cal, mil, v,id);
 
-//        sendGameSocket();
-
-
-        //发送服务器
-//            sendYunData(passiveModel.getS_id(),1,Integer.parseInt(passiveModel.getCurSpeed()),
-//            		Integer.parseInt(passiveModel.getCurResistance()),Integer.parseInt(passiveModel.getSpasmTimes()),
-//            		spasmLevel,0,0,1);
-
-        //发送数据到游戏 v2.0
         PassiveModel passiveModel = JSON.parseObject(msg, PassiveModel.class);
-        SocketMsg socketMsg = new SocketMsg();
-        socketMsg.setId(passiveModel.getLoginId());
-        socketMsg.setType(1);
-        socketMsg.setSpeed(Integer.parseInt(passiveModel.getCurSpeed()));
-        socketMsg.setResistance(Integer.parseInt(passiveModel.getCurResistance()));
-        socketMsg.setOffset(0);
-        socketMsg.setSpasmTimes(Integer.parseInt(passiveModel.getSpasmTimes()));
-        socketMsg.setSpasmLevel(Integer.parseInt(passiveModel.getSpasmLevel()));
 
-        sendSocketDataToGame(JSON.toJSONString(socketMsg));
+        String deviceId = passiveModel.getLoginId();
+        int speed = Integer.parseInt(passiveModel.getCurSpeed());
+
+        //里程
+        int totalTime = (int) ((System.currentTimeMillis() - mStartTime)/1000);
+        System.out.println("总时间： totalTime = "+totalTime);
+
+        Float milValue = mTotalMilMap.get(deviceId);
+        if(milValue == null){
+            milValue = 0.0f;
+        }
+        float mil = speed * 0.1f * 1000 / 3600;
+        milValue += mil;
+        mTotalMilMap.put(deviceId,milValue);
+
+        //卡路里
+        float cal = speed * 0.2f/300;
+
+
+        Float calValue = mTotalCalMap.get(deviceId);
+        if(calValue == null){
+            calValue = 0.0f;
+        }
+        calValue += cal;
+        mTotalCalMap.put(deviceId,calValue);
+
+
+        byte[] head = {100, 101};
+        byte[] typeBytes = intToByte(1);
+        byte[] speedBytes = intToByte(speed);
+        byte[] resistanceBytes = intToByte(Integer.parseInt(passiveModel.getCurResistance()));
+        byte[] offsetBytes = intToByte(0);
+        byte[] spasmTimesBytes = intToByte(Integer.parseInt(passiveModel.getSpasmTimes()));
+        byte[] spasmLevelBytes = intToByte(Integer.parseInt(passiveModel.getSpasmLevel()));
+        byte[] milBytes = intToByte((int)mil);
+        byte[] calBytes = intToByte((int) cal);
+
+
+        byte[] bytes = byteMergerAll(head, deviceId.getBytes(), typeBytes, speedBytes, resistanceBytes, offsetBytes, spasmTimesBytes, spasmLevelBytes,milBytes,calBytes);
+
+        sendSocketBytesToGame(bytes);
+
 
         //存储
         List<String> strings = mAllMaps.get(passiveModel.getLoginId());
@@ -335,26 +337,6 @@ public class Server {
  
 
 	private static void activeModel(String msg) {
-//        ActiveModel activeModel = JSON.parseObject(msg, ActiveModel.class);
-//        byte flag = 0;
-//        byte speed = (byte) Integer.parseInt(activeModel.getCurSpeed());
-//        byte resistance = (byte) (Integer.parseInt(activeModel.getCurResistance())+1);
-//        byte spasm = (byte) Integer.parseInt(activeModel.getSpasmTimes());
-//        int cal = (int) (Double.parseDouble(activeModel.getCalories()) * 1000);
-//        int mil = (int) (Double.parseDouble(activeModel.getActiveMileage()) * 1000);
-//        byte[] id = strToByteArray(activeModel.getLoginId());
-//        if(speed < 0){
-//            speed = (byte) (speed+128);
-//        }
-//        mActiveMil = mil;
-//        byte offset = Byte.parseByte(activeModel.getOffset());
-//        int v = (15 - offset) * 10000 / 30;
-//
-//        isPause = false;
-//
-//        //发送游戏
-//        sendUDPData(flag, speed, resistance, spasm, offset, cal, mil, v,id);
-
         //发送服务器
 //            sendYunData(activeModel.getS_id(),0,Integer.parseInt(activeModel.getCurSpeed()),
 //            		Integer.parseInt(activeModel.getCurResistance()),Integer.parseInt(activeModel.getSpasmTimes()),
@@ -363,16 +345,53 @@ public class Server {
 
         //发送数据到游戏 v2.0
         ActiveModel activeModel = JSON.parseObject(msg, ActiveModel.class);
-        SocketMsg socketMsg = new SocketMsg();
-        socketMsg.setId(activeModel.getLoginId());
-        socketMsg.setType(0);
-        socketMsg.setSpeed(Integer.parseInt(activeModel.getCurSpeed()));
-        socketMsg.setResistance(Integer.parseInt(activeModel.getCurResistance())+1);
-        socketMsg.setOffset(Integer.parseInt(activeModel.getOffset()));
-        socketMsg.setSpasmTimes(Integer.parseInt(activeModel.getSpasmTimes()));
-        socketMsg.setSpasmLevel(null);
+        String deviceId = activeModel.getLoginId();
+        int speed = Integer.parseInt(activeModel.getCurSpeed());
 
-        sendSocketDataToGame(JSON.toJSONString(socketMsg));
+        //里程
+        int totalTime = (int) ((System.currentTimeMillis() - mStartTime)/1000);
+        System.out.println("总时间： totalTime = "+totalTime);
+
+        Float milValue = mTotalMilMap.get(deviceId);
+        if(milValue == null){
+            milValue = 0.0f;
+        }
+        float mil = speed * 0.1f * 1000 / 3600;
+        milValue += mil;
+        mTotalMilMap.put(deviceId,milValue);
+
+        //卡路里
+        int resistance = Integer.parseInt(activeModel.getCurResistance());
+        if(resistance == 0){
+            resistance = 1;
+        }
+        float resParam = resistance * 1.00f / 3.0f;
+        float cal = speed * 0.2f * resParam/60;
+
+        Float calValue = mTotalCalMap.get(deviceId);
+        if(calValue == null){
+            calValue = 0.0f;
+        }
+        calValue += cal;
+        mTotalCalMap.put(deviceId,calValue);
+
+
+        byte[] head = {100, 101};
+        byte[] typeBytes = intToByte(0);
+        byte[] speedBytes = intToByte(speed);
+        byte[] resistanceBytes = intToByte(Integer.parseInt(activeModel.getCurResistance()));
+        byte[] offsetBytes = intToByte(Integer.parseInt(activeModel.getOffset()));
+        byte[] spasmTimesBytes = intToByte(Integer.parseInt(activeModel.getSpasmTimes()));
+        byte[] spasmLevelBytes = intToByte(0);
+        byte[] milBytes = intToByte((int)mil);
+        byte[] calBytes = intToByte((int) cal);
+
+
+        byte[] bytes = byteMergerAll(head, deviceId.getBytes(), typeBytes, speedBytes, resistanceBytes, offsetBytes, spasmTimesBytes, spasmLevelBytes,milBytes,calBytes);
+
+        sendSocketBytesToGame(bytes);
+
+
 
         //存储
         List<String> strings = mAllMaps.get(activeModel.getLoginId());
@@ -383,43 +402,46 @@ public class Server {
         strings.add(msg);
         mAllMaps.put(activeModel.getLoginId(),strings);
     }
-	
-   private static void sendYunData(final String s_id, final int flag, final int curSpeed, final int curResistance, final int spasmTimes, final int spasticity,
-                                   final int offset, final int curDirection, final int smartMode) {
-	   	
-//	   ThreadUtils.runOnBackgroundThread(new Runnable() {
-//			@Override
-//			public void run() {
-//
-//            }
-//	    });
-
-       MyOkHttpUtils.sendYunData(s_id, flag, curSpeed, curResistance, spasmTimes, spasticity, offset, curDirection, smartMode);
 
 
-
-   }
 
     private static void gamePause(String data) {
-//        sendUDPDataPause();
 
         PauseModel pauseModel = JSON.parseObject(data, PauseModel.class);
-        SocketStatus socketStatus = new SocketStatus();
-        socketStatus.setId(pauseModel.getLoginId());
-        socketStatus.setStatus(0);
+//        SocketStatus socketStatus = new SocketStatus();
+//        socketStatus.setId(pauseModel.getLoginId());
+//        socketStatus.setStatus(0);
+//
+//        sendSocketDataToGame(JSON.toJSONString(socketStatus));
+        byte[] head = {105, 106};
+        byte[] statusBytes = intToByte(0);
 
-        sendSocketDataToGame(JSON.toJSONString(socketStatus));
+        byte[] bytes = byteMergerAll(head, pauseModel.getLoginId().getBytes(), statusBytes);
 
+        System.out.println("服务端 暂停 原始数据 = " + Arrays.toString(bytes));
+        System.out.println("服务端 暂停 设备id = " + pauseModel.getLoginId());
+
+        sendSocketBytesToGame(bytes);
     }
 
     private static void gameOver(String id) {
-//        sendUDPDataEnd();
 
-        SocketStatus socketStatus = new SocketStatus();
-        socketStatus.setId(id);
-        socketStatus.setStatus(1);
+//        SocketStatus socketStatus = new SocketStatus();
+//        socketStatus.setId(id);
+//        socketStatus.setStatus(1);
+//
+//        sendSocketDataToGame(JSON.toJSONString(socketStatus));
 
-        sendSocketDataToGame(JSON.toJSONString(socketStatus));
+        byte[] head = {110, 111};
+        byte[] statusBytes = intToByte(0);
+
+        byte[] bytes = byteMergerAll(head, id.getBytes(), statusBytes);
+
+        System.out.println("服务端 停止 原始数据 = " + Arrays.toString(bytes));
+        System.out.println("服务端 停止 设备id = " + id);
+
+
+        sendSocketBytesToGame(bytes);
 
 
         //TODO 模拟结束，后期需修订
@@ -449,6 +471,28 @@ public class Server {
             mDatagramSocket.send(dp);
 
         }catch (Exception e){
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * 发送数据到游戏   关联数据、主动数据、被动数据、暂停数据、停止数据
+     *
+     * @param bytes
+     */
+    private static void sendSocketBytesToGame(byte[] bytes) {
+
+        System.out.println("---------服务端 ===》 发送数据 ==》 客户端---------");
+
+        try {
+
+            DatagramPacket dp = new DatagramPacket(bytes, bytes.length, InetAddress.getByName("127.0.0.1"), 12008);
+
+            // 发送数据
+            mDatagramSocket.send(dp);
+
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -869,6 +913,9 @@ public class Server {
             mDataBeanList = null;
             mDataBeanList = relationModel.getData();
 
+            //TODO 发送关联数据
+            sendRelationData();
+
 
         }
 
@@ -886,7 +933,31 @@ public class Server {
         }
     }
 
+    /**
+     * 发送关联信息数据
+     */
+    private static void sendRelationData() {
 
+        byte[] head = {97, 98};
+        byte[] codeBytes = intToByte(getCode());
+
+
+        for (int i = 0; i < mDataBeanList.size(); i++) {
+            RelationModel.DataBean dataBean = mDataBeanList.get(i);
+            String id = dataBean.getDeviceId();
+            String patientName = dataBean.getPatientName();
+            int length = patientName.getBytes().length;
+            byte[] bytes = byteMergerAll(head, codeBytes, id.getBytes(),intToByte(length),patientName.getBytes());
+
+            System.out.println("服务端 关联数据 "+Arrays.toString(bytes));
+            sendSocketBytesToGame(bytes);
+
+        }
+
+
+
+
+    }
 
     /**
      * 上传单个在线设备
@@ -1030,6 +1101,34 @@ public class Server {
         }
     }
 
+    /**
+     * 合并字节数组
+     * @param values
+     * @return
+     */
+    private static byte[] byteMergerAll(byte[]... values) {
+        int length_byte = 0;
+        for (int i = 0; i < values.length; i++) {
+            length_byte += values[i].length;
+        }
+        byte[] all_byte = new byte[length_byte];
+        int countLength = 0;
+        for (int i = 0; i < values.length; i++) {
+            byte[] b = values[i];
+            System.arraycopy(b, 0, all_byte, countLength, b.length);
+            countLength += b.length;
+        }
+        return all_byte;
+    }
+
+    /**
+     * 获取随机6位数字
+     * @return
+     */
+    public static int getCode() {
+
+        return (int)((Math.random()*9+1)*100000);
+    }
 
 
     /**
@@ -1049,6 +1148,28 @@ public class Server {
 
             }
         }
+    }
+
+
+    /**
+     * 发送云端时时数据
+     * @param s_id
+     * @param flag
+     * @param curSpeed
+     * @param curResistance
+     * @param spasmTimes
+     * @param spasticity
+     * @param offset
+     * @param curDirection
+     * @param smartMode
+     */
+    private static void sendYunData(final String s_id, final int flag, final int curSpeed, final int curResistance, final int spasmTimes, final int spasticity,
+                                    final int offset, final int curDirection, final int smartMode) {
+
+        MyOkHttpUtils.sendYunData(s_id, flag, curSpeed, curResistance, spasmTimes, spasticity, offset, curDirection, smartMode);
+
+
+
     }
 
 }
