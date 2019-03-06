@@ -10,8 +10,6 @@ import com.zmm.twserverpc_zbd.client.model.PassiveModel;
 import com.zmm.twserverpc_zbd.client.model.PauseModel;
 import com.zmm.twserverpc_zbd.client.model.RelationModel;
 import com.zmm.twserverpc_zbd.client.model.ReportModel;
-import com.zmm.twserverpc_zbd.socket.SocketMsg;
-import com.zmm.twserverpc_zbd.socket.SocketStatus;
 import com.zmm.twserverpc_zbd.utils.DateUtil;
 import com.zmm.twserverpc_zbd.utils.MyOkHttpUtils;
 import com.zmm.twserverpc_zbd.utils.ThreadUtils;
@@ -29,6 +27,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.Socket;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -207,11 +206,7 @@ public class Server {
                 @Override
                 public void run() {
 
-                    try {
-                        receiveGameData();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    receiveGameData();
                 }
             });
 
@@ -502,42 +497,57 @@ public class Server {
     /**
      * 获取游戏返回数据
      */
-    private static void receiveGameData() throws IOException {
+    private static void receiveGameData() {
 
-        // 创建接收端Socket对象
-        DatagramSocket ds = new DatagramSocket(12009);
+        try {
+            byte[] receive = new byte[1024];
 
-        // 创建数据包
-        while (true) {
+            while(true){
+                Socket sock = new Socket("127.0.0.1", 12009);
 
-            byte[] bys = new byte[1024];
-            DatagramPacket dp = new DatagramPacket(bys, bys.length);
+                sock.getOutputStream().write("aa".getBytes());
 
-            // //接收数据
-            ds.receive(dp);
+                String data;
+                sock.getInputStream().read(receive);
+                data = new String(receive);
+                System.out.println("服务端接收客户端发来的游戏状态: " + data);
 
-            // 解析数据
-            String data = new String(dp.getData(), 0, dp.getLength());
 
-            System.out.println("Server-PC 获取游戏返回数据："+ data);
+                switch (data){
+                    case "gameover":
+                        isStart = false;
+                        System.out.println("服务端：游戏结束");
+//                        reportBuild();
 
-            switch (data){
-                case "gameover":
-                    isStart = false;
+                        break;
 
-                    reportBuild();
+                    case "exit":
+                        System.out.println("服务端：游戏退出");
 
-                    break;
+                        break;
 
-                case "exit":
+                    case "start":
+                        System.out.println("服务端：游戏开始");
 
-                    break;
+                        mStartTime = System.currentTimeMillis();
+                        isStart = true;
+                        break;
 
-                case "start":
-                    mStartTime = System.currentTimeMillis();
-                    isStart = true;
-                    break;
+                    case "ready":
+                        System.out.println("服务端：游戏准备");
+
+                        mStartTime = System.currentTimeMillis();
+                        isStart = true;
+                        break;
+                }
+
+                //通知客户端，不需要继续发送了
+                sock.getOutputStream().write("ping".getBytes());
+
+                sock.close();
             }
+        }catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
